@@ -51,7 +51,7 @@ const Navbar = () => {
     <nav className="h-16 bg-[#1e1e1e] border-b border-gray-800 flex items-center justify-between px-6 sticky top-0 z-50">
       <div className="flex items-center gap-2">
         <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600">
-          CODE BATTLE
+          CLASH OF CODERS
         </h1>
       </div>
 
