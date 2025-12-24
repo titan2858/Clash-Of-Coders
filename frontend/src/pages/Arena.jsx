@@ -45,9 +45,8 @@ const Arena = () => {
 
   useEffect(() => {
     let username = 'Guest';
-    let userId = 'guest'; // Default ID
+    let userId = 'guest';
 
-    // --- FIX: Retrieve User ID correctly ---
     try {
         const userStr = localStorage.getItem('user');
         if (userStr) {
@@ -56,7 +55,6 @@ const Arena = () => {
             userId = u._id || u.id || 'guest';
         }
         
-        // Handle separate keys if used
         const storedName = localStorage.getItem('username');
         if(storedName) username = storedName;
         
@@ -68,7 +66,6 @@ const Arena = () => {
     const joinRoom = () => {
         const cleanRoomId = roomId.trim(); 
         console.log(`[ARENA] Emitting Join: ${cleanRoomId} as ${username} (ID: ${userId})`);
-        // --- FIX: Pass userId to socket ---
         socket.emit('join_room', { roomId: cleanRoomId, username, userId });
     };
 
@@ -176,12 +173,13 @@ const Arena = () => {
       }
   };
 
+  // --- ACTION: RUN CODE (Public Test Case) ---
   const handleRun = async () => {
       if (!problem) return;
       setIsRunning(true);
-      setConsoleTab('testcase'); 
+      setConsoleTab('testcase'); // Ensure we are on the testcase tab
       setRunResult(null);
-      setSubmitResult(null);
+      setSubmitResult(null); // Clear previous submit results
 
       try {
           const response = await api.post('/game/run', {
@@ -189,6 +187,7 @@ const Arena = () => {
               sourceCode: code,
               language
           });
+          console.log("Run Code Response:", response.data); // Debugging
           setRunResult(response.data);
       } catch (error) {
           console.error(error);
@@ -198,14 +197,14 @@ const Arena = () => {
       }
   };
 
+  // --- ACTION: SUBMIT CODE (Hidden Test Cases) ---
   const handleSubmit = async () => {
       if (!problem) return;
       setIsSubmitting(true);
-      setConsoleTab('result'); 
+      setConsoleTab('result'); // Switch to Result tab for full submission
       setRunResult(null);
 
       try {
-          // --- FIX: Robust ID Extraction for Submission ---
           let userId = 'guest_user';
           try {
              const userStr = localStorage.getItem('user');
@@ -391,10 +390,11 @@ const Arena = () => {
         </div>
         <div className="h-1/3 min-h-[200px] border-t border-[#333] bg-[#262626] flex flex-col">
             <div className="h-9 flex items-center bg-[#333] px-1 gap-1">
-                <button onClick={() => setConsoleTab('testcase')} className={`px-3 py-1 text-xs font-medium rounded-t flex items-center gap-2 ${consoleTab === 'testcase' ? 'bg-[#262626] text-white' : 'text-gray-400'}`}><CheckCircle2 className="w-3 h-3" /> Test Cases</button>
-                <button onClick={() => setConsoleTab('result')} className={`px-3 py-1 text-xs font-medium rounded-t flex items-center gap-2 ${consoleTab === 'result' ? 'bg-[#262626] text-white' : 'text-gray-400'}`}><Terminal className="w-3 h-3" /> Result</button>
+                <button onClick={() => setConsoleTab('testcase')} className={`px-3 py-1 text-xs font-medium rounded-t flex items-center gap-2 ${consoleTab === 'testcase' ? 'bg-[#262626] text-white border-t border-x border-[#444]' : 'text-gray-400'}`}><CheckCircle2 className="w-3 h-3" /> Test Cases</button>
+                <button onClick={() => setConsoleTab('result')} className={`px-3 py-1 text-xs font-medium rounded-t flex items-center gap-2 ${consoleTab === 'result' ? 'bg-[#262626] text-white border-t border-x border-[#444]' : 'text-gray-400'}`}><Terminal className="w-3 h-3" /> Result</button>
             </div>
             <div className="flex-1 p-4 overflow-y-auto">
+                {/* --- TAB: TEST CASES --- */}
                 {consoleTab === 'testcase' && (
                     <div className="flex gap-4 h-full">
                         <div className="w-24 flex flex-col gap-2 border-r border-[#333] pr-2">
@@ -406,11 +406,25 @@ const Arena = () => {
                              {testCases[activeTestCaseId] && (
                                 <div className="space-y-4">
                                     <div><span className="text-gray-500 block mb-1">Input:</span><div className="bg-[#1e1e1e] p-3 rounded border border-[#333] text-gray-300">{testCases[activeTestCaseId].input}</div></div>
+                                    
+                                    {/* --- FIX: Display RUN Results Here --- */}
+                                    {runResult && runResult.success && (
+                                        <>
+                                            <div className="pt-2 border-t border-[#333] mt-2">
+                                                <div className={`text-xs font-bold mb-2 ${runResult.result.passed ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {runResult.result.passed ? 'Accepted' : 'Wrong Answer'}
+                                                </div>
+                                                <div className="mb-2"><span className="text-gray-500 block mb-1">Your Output:</span><div className={`p-3 rounded border border-[#333] ${runResult.result.passed ? 'bg-[#1e1e1e] text-gray-300' : 'bg-red-900/10 text-red-400'}`}>{runResult.result.actual}</div></div>
+                                                <div><span className="text-gray-500 block mb-1">Expected Output:</span><div className="bg-[#1e1e1e] p-3 rounded border border-[#333] text-gray-300">{runResult.result.expected}</div></div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                              )}
                         </div>
                     </div>
                 )}
+                {/* --- TAB: RESULT (SUBMIT) --- */}
                 {consoleTab === 'result' && (
                     !submitResult ? <div className="h-full flex flex-col items-center justify-center text-gray-500 text-xs"><p>Submit to see hidden results.</p></div> : 
                     <div className="flex flex-col h-full">
