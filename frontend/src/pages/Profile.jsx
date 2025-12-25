@@ -61,6 +61,17 @@ const Profile = () => {
       }
   };
 
+  // Helper for Rank Colors
+  const getRankColor = (rank) => {
+    switch(rank) {
+        case 'Grandmaster': return 'bg-purple-600 text-white border border-purple-400';
+        case 'Hacker': return 'bg-red-600 text-white border border-red-400';
+        case 'Coder': return 'bg-orange-500 text-white border border-orange-300';
+        case 'Apprentice': return 'bg-blue-500 text-white border border-blue-300';
+        default: return 'bg-gray-600 text-gray-200 border border-gray-500'; // Novice
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-[#0f172a] flex items-center justify-center text-white"><Loader2 className="w-8 h-8 animate-spin" /></div>;
   if (!user) return <div className="min-h-screen bg-[#0f172a] text-white p-8">User not found. Please log in again.</div>;
 
@@ -93,8 +104,8 @@ const Profile = () => {
                   <h2 className="text-2xl font-bold">{user.username}</h2>
               )}
               
-              <span className={`px-3 py-1 rounded-full text-xs font-bold mt-2 ${user.rank === 'Novice' ? 'bg-gray-600' : 'bg-yellow-600'}`}>
-                {user.rank} Rank
+              <span className={`px-4 py-1.5 rounded-full text-xs font-bold mt-2 shadow-lg ${getRankColor(user.rank)}`}>
+                {user.rank}
               </span>
             </div>
 
@@ -156,7 +167,6 @@ const Profile = () => {
                 <div className="text-slate-500 text-center py-10 bg-[#1e293b] rounded-xl">No matches played yet.</div>
             ) : (
                 matches.map((match) => {
-                    // Determine Opponent Name
                     let opponentName = "Unknown";
                     if (match.player1 === user._id) {
                         opponentName = match.player2Username || "Opponent";
