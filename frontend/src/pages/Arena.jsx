@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Editor from '@monaco-editor/react';
 import { 
   Play, Loader2, Trophy, Terminal, Code2, XCircle, ArrowLeft, CheckCircle2, 
-  AlertCircle, Clock, Swords, Timer, Sparkles, BrainCircuit, X
+  AlertCircle, Clock, Swords, Timer, Sparkles, BrainCircuit, X, AlertTriangle
 } from 'lucide-react';
 import { socket } from '../utils/socket';
 import api, { analyzeCode } from '../utils/api';
@@ -38,6 +38,9 @@ const Arena = () => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
+  // Anti-Cheat State
+  const [strikes, setStrikes] = useState(0);
+
   const [myProgress, setMyProgress] = useState(0);
   const [opponentProgress, setOpponentProgress] = useState(0);
   const [winner, setWinner] = useState(null);
@@ -61,11 +64,10 @@ const Arena = () => {
         const storedId = localStorage.getItem('userId');
         if(storedId) userId = storedId;
 
-    } catch(e) { console.error("Auth parsing error", e); }
+    } catch(e) { }
 
     const joinRoom = () => {
         const cleanRoomId = roomId.trim(); 
-        console.log(`[ARENA] Emitting Join: ${cleanRoomId} as ${username} (ID: ${userId})`);
         socket.emit('join_room', { roomId: cleanRoomId, username, userId });
     };
 
@@ -78,13 +80,11 @@ const Arena = () => {
     socket.on('connect', joinRoom);
 
     const handleMatchFound = (data) => {
-        console.log("[ARENA] Match Found! Starting Countdown...", data);
         setStatus('starting');
         setCountdownTimer(Math.ceil(data.duration / 1000));
     };
 
     const handleGameStart = (data) => {
-      console.log("[ARENA] Game Started!", data);
       setStatus('playing');
       setProblem(data.problem);
       
@@ -103,14 +103,12 @@ const Arena = () => {
     };
 
     const handleGameOver = (data) => {
-        console.log("[ARENA] Game Over Event Received. Winner:", data.winnerId);
         setStatus('finished');
         setWinner(data.winnerId);
         setWinReason(data.reason); 
     };
 
     const handleError = (data) => {
-        console.error("[ARENA] Socket Error:", data);
         if (data.message.includes("Room is full")) {
              alert("Room is full! Redirecting...");
              navigate('/dashboard');
@@ -159,6 +157,34 @@ const Arena = () => {
       return () => clearInterval(interval);
   }, [status, gameTimer]); 
 
+  // --- NEW: ANTI-CHEAT VISIBILITY DETECTION ---
+  useEffect(() => {
+      const handleVisibilityChange = () => {
+          if (document.hidden && status === 'playing') {
+              setStrikes(prev => {
+                  const newStrikes = prev + 1;
+                  
+                  if (newStrikes >= 3) {
+                      // Disqualify User
+                      setStatus('finished');
+                      setWinReason('disqualified');
+                      setWinner('opponent'); // Force opponent win locally so this user sees Defeat
+                      
+                      // Notify Server to declare opponent winner
+                      socket.emit('player_disqualified', { roomId });
+                  } else {
+                      // Warning
+                      alert(`⚠️ ANTI-CHEAT WARNING!\n\nTab switching is not allowed during battle.\nStrike ${newStrikes}/3.\n\nAt 3 strikes you will be disqualified.`);
+                  }
+                  return newStrikes;
+              });
+          }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [status, roomId]);
+
   const formatTime = (seconds) => {
       const m = Math.floor(seconds / 60).toString().padStart(2, '0');
       const s = (seconds % 60).toString().padStart(2, '0');
@@ -177,9 +203,9 @@ const Arena = () => {
   const handleRun = async () => {
       if (!problem) return;
       setIsRunning(true);
-      setConsoleTab('testcase'); // Ensure we are on the testcase tab
+      setConsoleTab('testcase'); 
       setRunResult(null);
-      setSubmitResult(null); // Clear previous submit results
+      setSubmitResult(null); 
 
       try {
           const response = await api.post('/game/run', {
@@ -187,10 +213,8 @@ const Arena = () => {
               sourceCode: code,
               language
           });
-          console.log("Run Code Response:", response.data); // Debugging
           setRunResult(response.data);
       } catch (error) {
-          console.error(error);
           setRunResult({ success: false, error: "Execution Failed" });
       } finally {
           setIsRunning(false);
@@ -201,7 +225,7 @@ const Arena = () => {
   const handleSubmit = async () => {
       if (!problem) return;
       setIsSubmitting(true);
-      setConsoleTab('result'); // Switch to Result tab for full submission
+      setConsoleTab('result'); 
       setRunResult(null);
 
       try {
@@ -248,7 +272,6 @@ const Arena = () => {
           }
 
       } catch (error) {
-          console.error(error);
           setSubmitResult({
               status: 'Runtime Error',
               error: error.response?.data?.message || error.message,
@@ -273,7 +296,6 @@ const Arena = () => {
           setAnalysisResult(response.data);
           setShowAnalysisModal(true);
       } catch (error) {
-          console.error("Analysis Failed:", error);
           alert("Failed to analyze code. The AI might be busy.");
       } finally {
           setIsAnalyzing(false);
@@ -326,9 +348,19 @@ const Arena = () => {
             <button className={`px-4 text-xs font-medium flex items-center gap-2 bg-[#262626] text-white border-t-2 border-green-500 h-full`}>
                 <Code2 className="w-4 h-4" /> Description
             </button>
-            <div className="flex items-center gap-2 text-gray-300 bg-[#1a1a1a] px-3 py-1 rounded-full text-xs border border-[#444]">
-                <Timer className="w-3 h-3 text-orange-500" />
-                <span className="font-mono font-bold">{formatTime(gameTimer)}</span>
+            <div className="flex items-center gap-4">
+                {/* --- NEW: STRIKES INDICATOR --- */}
+                {strikes > 0 && (
+                    <div className="flex items-center gap-1 bg-red-500/20 px-2 py-0.5 rounded text-red-400 border border-red-500/30 text-xs font-bold animate-pulse">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>{strikes}/3 Strikes</span>
+                    </div>
+                )}
+
+                <div className="flex items-center gap-2 text-gray-300 bg-[#1a1a1a] px-3 py-1 rounded-full text-xs border border-[#444]">
+                    <Timer className="w-3 h-3 text-orange-500" />
+                    <span className="font-mono font-bold">{formatTime(gameTimer)}</span>
+                </div>
             </div>
         </div>
 
@@ -471,9 +503,11 @@ const Arena = () => {
                       {winner === socket.id ? 'VICTORY!' : 'DEFEAT'}
                   </h2>
                   <p className="text-gray-400 mb-8 text-sm">
-                      {winReason === 'timeout' 
-                        ? (winner === socket.id ? "Opponent timed out!" : "Time's up! The Host wins by default.")
-                        : (winner === socket.id ? "You solved it faster. Great job!" : "Your opponent was faster this time.")
+                      {winReason === 'disqualified'
+                        ? (winner === socket.id ? "Opponent was disqualified!" : "You were disqualified for tab switching.")
+                        : winReason === 'timeout' 
+                            ? (winner === socket.id ? "Opponent timed out!" : "Time's up! The Host wins by default.")
+                            : (winner === socket.id ? "You solved it faster. Great job!" : "Your opponent was faster this time.")
                       }
                   </p>
                   
