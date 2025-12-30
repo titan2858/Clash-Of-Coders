@@ -76,53 +76,38 @@ Aizu Online Judge API: For fetching algorithmic problems.
 
 Follow these steps to run the project locally.
 
-1. Clone the Repository
+Clone the Repository
+git clone https://github.com/titan2858/Clash-Of-Coders.git cd Clash-Of-Coders
 
-git clone [https://github.com/titan2858/Clash-Of-Coders.git](https://github.com/titan2858/Clash-Of-Coders.git)
-cd Clash-Of-Coders
-
-
-2. Backend Setup
-
+Backend Setup
 Navigate to the backend folder, install dependencies, and configure environment variables.
 
-cd backend
-npm install
-
+cd backend npm install
 
 Create a .env file in the backend directory:
 
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
+PORT=5000 MONGO_URI=your_mongodb_connection_string JWT_SECRET=your_jwt_secret_key
 
-# JDoodle Compiler Credentials ([https://www.jdoodle.com/compiler-api/](https://www.jdoodle.com/compiler-api/))
-JDOODLE_CLIENT_ID=your_jdoodle_client_id
-JDOODLE_CLIENT_SECRET=your_jdoodle_client_secret
+JDoodle Compiler Credentials (https://www.jdoodle.com/compiler-api/)
+JDOODLE_CLIENT_ID=your_jdoodle_client_id JDOODLE_CLIENT_SECRET=your_jdoodle_client_secret
 
-# Google Gemini AI Key ([https://aistudio.google.com/](https://aistudio.google.com/))
+Google Gemini AI Key (https://aistudio.google.com/)
 GEMINI_API_KEY=your_gemini_api_key
-
 
 Start the Backend Server:
 
 npm start
 
-
 The server will run on http://localhost:5000
 
-3. Frontend Setup
-
+Frontend Setup
 Open a new terminal, navigate to the frontend folder, and install dependencies.
 
-cd frontend
-npm install
-
+cd frontend npm install
 
 Start the React Development Server:
 
 npm run dev
-
 
 The app will run on http://localhost:5173
 
