@@ -8,8 +8,8 @@ const generateToken = (id) =>
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-// desc    Register new user
-// route   POST /api/auth/register
+//   Register new user
+//   POST /api/auth/register
 const register = async (req, res) => 
 {
   const { username, email, password, age, college, address } = req.body;
@@ -74,7 +74,8 @@ const register = async (req, res) =>
 
 //  Authenticate a user
 //  POST /api/auth/login
-const login = async (req, res) => {
+const login = async (req, res) => 
+{
   const { email, password } = req.body;
 
   try 
@@ -97,10 +98,14 @@ const login = async (req, res) => {
           matchesPlayed: user.matchesPlayed
         }
       });
-    } else {
+    } 
+    else 
+    {
       res.status(400).json({ message: 'Invalid credentials' });
     }
-  } catch (error) {
+  } 
+  catch (error) 
+  {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }

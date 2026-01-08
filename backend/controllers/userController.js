@@ -1,10 +1,12 @@
 const User = require('../models/User');
 const Match = require('../models/Match');
 
-// @desc    Get User Profile & Stats
-// @route   GET /api/users/:id
-const getUserProfile = async (req, res) => {
-  try {
+//    Get User Profile & Stats
+//    GET /api/users/:id
+const getUserProfile = async (req, res) => 
+{
+  try 
+  {
     const user = await User.findById(req.params.id).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -13,21 +15,25 @@ const getUserProfile = async (req, res) => {
     const matches = await Match.find({
       $or: [{ player1: req.params.id }, { player2: req.params.id }],
       status: 'finished'
-    }).sort({ endTime: -1 }).limit(10); // Last 10 matches
+    }).sort({ endTime: -1 }).limit(20); // Last 20 matches
 
     res.json({ user, matches });
-  } catch (error) {
+  } 
+  catch (error)   
+  {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
-  }
+  } 
 };
 
-// @desc    Update User Profile
-// @route   PUT /api/users/update
- const updateUserProfile = async   (req, res) => {
+//   Update User Profile
+//   PUT /api/users/update
+ const updateUserProfile = async   (req, res) => 
+{
   const { userId, username, age, college, address, bio } = req.body;
 
-  try {
+  try 
+  {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -55,7 +61,9 @@ const getUserProfile = async (req, res) => {
         bio: updatedUser.bio
       }
     });
-  } catch (error) {
+  } 
+  catch (error) 
+  {
     console.error("Update Error:", error);
     res.status(500).json({ message: 'Update failed' });
   }

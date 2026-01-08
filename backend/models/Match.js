@@ -1,45 +1,54 @@
 const mongoose = require('mongoose');
 
 const MatchSchema = new mongoose.Schema({
-    roomId: {
+    roomId: 
+    {
         type: String,
         required: true,
         unique: true
     },
-    player1: {
+    player1: 
+    {
         type: String
     },
-    player2: {
+    player2: 
+    {
         type: String
     },
-    // --- NEW: Store usernames for history display ---
-    player1Username: {
+    player1Username: 
+    {
         type: String,
         default: 'Guest'
     },
-    player2Username: {
+    player2Username: 
+    {
         type: String,
         default: 'Guest'
     },
-    winner: {
+    winner: 
+    {
         type: String
     },
-    problemId: {
+    problemId: 
+    {
         type: String
     },
     testCases: [{
         input: { type: String },
         expectedOutput: { type: String }
     }],
-    status: {
+    status: 
+    {
         type: String,
         enum: ['waiting', 'playing', 'finished', 'aborted'],
         default: 'waiting'
     },
-    startTime: {
+    startTime: 
+    {
         type: Date
     },
-    endTime: {
+    endTime: 
+    {
         type: Date
     }
 }, { timestamps: true });

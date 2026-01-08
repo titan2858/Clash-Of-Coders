@@ -13,10 +13,11 @@ const calculateRank = (wins) => {
     if (wins >= 10) return 'Coder';
     if (wins >= 3) return 'Apprentice';
     return 'Novice';
-};
+};  
 
-// @desc    Create a new game room
-const createRoom = async (req, res) => {
+//  Create a new game room
+const createRoom = async (req, res) => 
+{
   const { userId } = req.body;
   try {
     const roomId = uuidv4().slice(0, 6).toUpperCase();
@@ -30,43 +31,56 @@ const createRoom = async (req, res) => {
     });
 
     res.status(201).json({ success: true, roomId, match });
-  } catch (error) {
+  } 
+  catch (error) 
+  {
     console.error("Create Room Error:", error);
     res.status(500).json({ message: "Error creating room" });
   }
 };
 
-// @desc    Start game (API fallback)
+//  Start game (API fallback)
 const startGame = async (req, res) => {
   res.status(200).json({ message: "Start game via socket" });
 };
 
-// @desc    Run Code (Public Test Cases - No Score)
-const runCode = async (req, res) => {
+// Run Code (Public Test Cases - No Score)
+const runCode = async (req, res) => 
+{
   const { roomId, sourceCode, language } = req.body;
   const cleanRoomId = roomId ? roomId.trim() : "";
 
   let gameData = activeGames[cleanRoomId];
-  if (!gameData) {
-      try {
+  if (!gameData) 
+  {
+      try 
+      {
         const match = await Match.findOne({ roomId: cleanRoomId });
-        if (match && match.testCases && match.testCases.length > 0) {
+        if (match && match.testCases && match.testCases.length > 0) 
+        {
             gameData = { problemId: match.problemId, testCases: match.testCases };
             activeGames[cleanRoomId] = gameData;
         }
-      } catch(e) { return res.status(500).json({ message: "DB Error" }); }
+      } 
+      catch(e) 
+      { 
+        return res.status(500).json({ message: "DB Error" });
+      }
   }
 
-  if (!gameData || !gameData.testCases.length) {
+  if (!gameData || !gameData.testCases.length) 
+  {
       return res.status(404).json({ message: "No test cases found for this room" });
   }
 
   const testCase = gameData.testCases[0]; 
 
-  try {
+  try 
+  {
       const result = await executeCode(sourceCode, language, testCase.input);
       
-      if (result.error) {
+      if (result.error) 
+      {
           return res.status(200).json({ success: false, error: result.error });
       }
 
@@ -84,13 +98,15 @@ const runCode = async (req, res) => {
           }
       });
 
-  } catch (error) {
+  } 
+  catch (error) 
+  {
       console.error("[RUN] Error:", error);
       res.status(500).json({ message: "Execution failed" });
   }
 };
 
-// @desc    Submit Code (Hidden Test Cases - Ranked)
+// Submit Code (Hidden Test Cases - Ranked)
 const submitCode = async (req, res) => {
   const { roomId, userId, sourceCode, language } = req.body;
   const cleanRoomId = roomId ? roomId.trim() : "";
@@ -99,8 +115,10 @@ const submitCode = async (req, res) => {
 
   let gameData = activeGames[cleanRoomId];
   
-  if (!gameData) {
-      try {
+  if (!gameData) 
+  {
+      try 
+      {
         const match = await Match.findOne({ roomId: cleanRoomId });
         
         if (!match) return res.status(404).json({ message: "Game session not found" });
@@ -108,12 +126,15 @@ const submitCode = async (req, res) => {
 
         gameData = { problemId: match.problemId, testCases: match.testCases };
         activeGames[cleanRoomId] = gameData;
-      } catch (dbError) { 
+      } 
+      catch (dbError) 
+      { 
           return res.status(500).json({ message: "Database error" }); 
       }
   }
 
-  try {
+  try 
+  {
       let allPassed = true;
       const results = [];
 
@@ -147,7 +168,7 @@ const submitCode = async (req, res) => {
           match.winner = userId;
           await match.save();
           
-          // --- FIX: Update Stats for BOTH Players ---
+          //  Update Stats for BOTH Players ---
           const players = [match.player1, match.player2];
           
           // Use Promise.all to update both users in parallel

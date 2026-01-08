@@ -1,6 +1,6 @@
 // It uses Mongoose to connect your Node.js app to the MongoDB Atlas cloud.
 
-const mongoose = require('mongoose');
+const mongoose = require('mongoose');  
 
 const connectDB = async () => 
 {
