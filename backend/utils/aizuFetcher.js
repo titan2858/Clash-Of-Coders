@@ -3,10 +3,7 @@ const cheerio = require('cheerio');
 
 // Verified List of ITP1 (Intro to Programming) problems
 const PROBLEM_IDS = [
-    'ITP1_1_B', 'ITP1_1_C', 'ITP1_1_D', 
-    'ITP1_2_A', 'ITP1_2_C', 'ITP1_2_D',
-    'ITP1_3_A', 'ITP1_3_B', 'ITP1_3_C', 'ITP1_3_D',
-    'ITP1_4_A', 'ITP1_4_B', 'ITP1_4_C', 'ITP1_4_D'
+    'ITP1_1_B', 'ITP1_1_C', 'ITP1_1_D'
 ];
 
 const getAizuProblem = async () => {
@@ -67,7 +64,8 @@ const getAizuProblem = async () => {
         let realTitle = $('h1').first().text().trim();
         
         // If no h1, fallback to h2
-        if (!realTitle) {
+        if (!realTitle) 
+        {
             realTitle = $('h2').first().text().trim();
         }
 
