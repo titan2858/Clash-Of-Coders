@@ -15,12 +15,15 @@ const LOCAL_PROBLEMS = [
 const GAME_DURATION_MS = 30 * 60 * 1000;
 
 const socketManager = (io) => {
+    // In-Memory State (For fast access during game)
     const rooms = {}; 
 
     io.on('connection', (socket) => {
         console.log(`User Connected: ${socket.id}`);
 
         socket.on('join_room', async ({ roomId, username, userId }) => {
+            
+            // Initialize room wrapper in memory if it doesn't exist
             if (!rooms[roomId]) {
                 rooms[roomId] = {
                     players: [],
@@ -31,10 +34,53 @@ const socketManager = (io) => {
                 };
             }
 
+            // ---------------------------------------------------------
+            // 🔒 CONCURRENCY LOCK: ATOMIC DATABASE TRANSACTION
+            // ---------------------------------------------------------
+            // Check if this is a reconnection (user already in memory)
+            const isReconnecting = rooms[roomId].players.some(p => p.username === username);
+
+            // If it's a NEW player trying to join, enforce the DB Lock
+            if (!isReconnecting) {
+                try {
+                    const dbResult = await Match.updateOne(
+                        { 
+                            roomId: roomId, 
+                            // THE GUARD: Only update if index 1 (2nd player) does not exist
+                            "players.1": { $exists: false } 
+                        },
+                        { 
+                            // THE ACTION: Add player and set initial status
+                            $push: { players: userId || 'guest' },
+                            $setOnInsert: { status: 'waiting', createdAt: Date.now() }
+                        },
+                        { upsert: true } // Create room if it doesn't exist
+                    );
+
+                    // LOGIC: If we found a room but didn't modify it, it means the Guard failed (Room Full)
+                    // Note: 'upsertedCount' handles the creation case.
+                    if (dbResult.matchedCount > 0 && dbResult.modifiedCount === 0) {
+                        console.log(`[Concurrency] Blocked user ${username} from room ${roomId} (DB Full)`);
+                        socket.emit('error', { message: 'Room is full! (Database Locked)' });
+                        return; // ⛔ STOP EXECUTION HERE
+                    }
+                } catch (err) {
+                    console.error("Atomic Join Error:", err);
+                    // In production, you might want to return here. For dev, we might log and continue.
+                }
+            }
+            // ---------------------------------------------------------
+            // END ATOMIC TRANSACTION
+            // ---------------------------------------------------------
+
+
+            // --- Standard Socket Logic Below ---
+
             if (rooms[roomId].gameState === 'waiting') {
                 rooms[roomId].players = rooms[roomId].players.filter(p => p.connected);
             }
 
+            // If socket is already mapped, ignore
             if (rooms[roomId].players.some(p => p.id === socket.id)) return;
 
             let existingPlayerIndex = -1;
@@ -45,6 +91,7 @@ const socketManager = (io) => {
             }
 
             if (existingPlayerIndex !== -1) {
+                // HANDLE RECONNECT
                 rooms[roomId].players[existingPlayerIndex].id = socket.id;
                 rooms[roomId].players[existingPlayerIndex].connected = true;
                 if (userId) rooms[roomId].players[existingPlayerIndex].userId = userId;
@@ -69,6 +116,9 @@ const socketManager = (io) => {
                     });
                 }
             } else {
+                // HANDLE NEW JOIN (We passed the DB Check above)
+                
+                // Secondary Memory Check (Just in case DB lagged, though unlikely with await)
                 if (rooms[roomId].players.length >= 2) {
                     socket.emit('error', { message: 'Room is full!' });
                     return;
@@ -90,6 +140,7 @@ const socketManager = (io) => {
                 console.log(`User ${username} added to room ${roomId}`);
             }
 
+            // START GAME LOGIC
             if (rooms[roomId].players.length === 2 && rooms[roomId].gameState === 'waiting') {
                 rooms[roomId].gameState = 'starting';
                 rooms[roomId].startTime = Date.now();
@@ -102,6 +153,7 @@ const socketManager = (io) => {
                     players: rooms[roomId].players
                 });
 
+                // Fetch Problem Async
                 (async () => {
                     try {
                         if (!rooms[roomId].problem) {
@@ -118,7 +170,7 @@ const socketManager = (io) => {
                             const p1 = rooms[roomId].players[0];
                             const p2 = rooms[roomId].players[1];
 
-                            // --- UPDATE: Save Usernames too ---
+                            // Update DB with Problem Details
                             await Match.findOneAndUpdate(
                                 { roomId }, 
                                 { 
@@ -137,6 +189,7 @@ const socketManager = (io) => {
                     } catch (e) { console.error("Fetch Error:", e); }
                 })();
 
+                // Start Game Timer
                 setTimeout(() => {
                     if (!rooms[roomId]) return;
 
@@ -156,6 +209,7 @@ const socketManager = (io) => {
                         gameDuration: GAME_DURATION_MS 
                     });
 
+                    // Game Over Timeout
                     setTimeout(() => {
                         if (rooms[roomId] && rooms[roomId].gameState === 'playing') {
                             const hostPlayer = rooms[roomId].players.find(p => p.isHost);
@@ -173,6 +227,7 @@ const socketManager = (io) => {
             }
         });
 
+        // Other Events
         socket.on('update_progress', ({ roomId, progress }) => {
             socket.to(roomId).emit('opponent_progress', { progress });
         });

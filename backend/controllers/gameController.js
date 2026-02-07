@@ -5,7 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // RAM Cache
 const activeGames = {};
-
+  
 // Helper function to calculate rank
 const calculateRank = (wins) => {
     if (wins >= 50) return 'Grandmaster';

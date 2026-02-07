@@ -6,6 +6,10 @@ const PROBLEM_IDS = [
     'ITP1_1_B', 'ITP1_1_C', 'ITP1_1_D'
 ];
 
+const Easy_IDS =[
+    'ITP1_1_A', 'ITP1_1_B', 'ITP1_1_C', 'ITP1_1_D'
+];
+
 const getAizuProblem = async () => {
     try { 
         const randomId = PROBLEM_IDS[Math.floor(Math.random() * PROBLEM_IDS.length)];
@@ -127,5 +131,6 @@ const getAizuProblem = async () => {
         return null;
     }
 };
+
 
 module.exports = { getAizuProblem };

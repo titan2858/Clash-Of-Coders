@@ -42,7 +42,7 @@ const MatchSchema = new mongoose.Schema({
         type: String,
         enum: ['waiting', 'playing', 'finished', 'aborted'],
         default: 'waiting'
-    },
+    },        
     startTime: 
     {
         type: Date

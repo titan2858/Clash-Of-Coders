@@ -29,7 +29,7 @@ const server = http.createServer(app);
 app.use((req, res, next) => {
     console.log(`[REQUEST] ${req.method} ${req.url}`);
     next();
-});
+});     
 
 
 
@@ -44,7 +44,7 @@ const io = new Server(server, {
 // Middleware
 app.use(cors());
 app.use(express.json());
-
+   
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/game', gameRoutes);

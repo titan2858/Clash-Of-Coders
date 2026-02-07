@@ -4,7 +4,7 @@ const Match = require('../models/Match');
 //    Get User Profile & Stats
 //    GET /api/users/:id
 const getUserProfile = async (req, res) => 
-{
+{ 
   try 
   {
     const user = await User.findById(req.params.id).select('-password');
@@ -24,11 +24,11 @@ const getUserProfile = async (req, res) =>
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   } 
-};
+};  
 
 //   Update User Profile
 //   PUT /api/users/update
- const updateUserProfile = async   (req, res) => 
+ const updateUserProfile = async (req, res) => 
 {
   const { userId, username, age, college, address, bio } = req.body;
 
